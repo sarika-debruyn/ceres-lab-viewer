@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Zarr layer test bench</title>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/maplibre-gl@5.1.0/dist/maplibre-gl.css"
+/>
+<style>
+  :root {
+    --ink: #e8e6e1;
+    --dim: #8d8a84;
+    --panel: #14171a;
+    --line: #2a2f34;
+    --ok: #7fc8a9;
+    --bad: #e5766b;
+    --wait: #e0b354;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0b0d0f; color: var(--ink); }
+  body {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    font: 13px/1.5 ui-sans-serif, system-ui, sans-serif;
+  }
+  @media (max-width: 780px) {
+    body { grid-template-columns: 1fr; grid-template-rows: auto 60vh; }
+  }
+
+  #panel {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    padding: 20px;
+  }
+  h1 {
+    font: 600 15px/1.2 ui-sans-serif, system-ui, sans-serif;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .sub { color: var(--dim); margin: 0 0 22px; font-size: 12px; }
+
+  fieldset { border: 0; padding: 0; margin: 0 0 18px; }
+  legend {
+    font: 600 10px/1 ui-monospace, monospace;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--dim);
+    padding: 0 0 8px;
+  }
+  label { display: block; margin-bottom: 10px; }
+  label span {
+    display: block;
+    font-size: 11px;
+    color: var(--dim);
+    margin-bottom: 3px;
+  }
+  input, select, textarea, button {
+    width: 100%;
+    background: #0b0d0f;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 7px 8px;
+    font: 12px/1.4 ui-monospace, ui-monospace, monospace;
+  }
+  input:focus, select:focus, textarea:focus, button:focus-visible {
+    outline: 2px solid #4a7fa5;
+    outline-offset: 1px;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  button {
+    cursor: pointer;
+    background: #1e242a;
+    font-weight: 600;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 12px;
+    padding: 9px;
+  }
+  button:hover { background: #262d34; }
+
+  #status {
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 11px;
+    font: 11px/1.55 ui-monospace, monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 260px;
+    overflow-y: auto;
+    background: #0b0d0f;
+  }
+  .ok   { color: var(--ok); }
+  .bad  { color: var(--bad); }
+  .wait { color: var(--wait); }
+  .note { color: var(--dim); }
+
+  #map { width: 100%; height: 100%; }
+  .swatch {
+    display: flex; height: 12px; margin-top: 6px;
+    border: 1px solid var(--line); border-radius: 2px; overflow: hidden;
+  }
+  .swatch i { flex: 1; }
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <h1>Zarr layer test bench</h1>
+  <p class="sub">Confirms a store renders before any interface gets built.</p>
+
+  <fieldset>
+    <legend>Store</legend>
+    <label>
+      <span>Preset</span>
+      <select id="preset">
+        <option value="climate">CarbonPlan 4D climate (known good)</option>
+        <option value="ceres">My CERES store</option>
+      </select>
+    </label>
+    <label>
+      <span>Source URL</span>
+      <input id="source" />
+    </label>
+    <div class="row">
+      <label>
+        <span>Variable</span>
+        <input id="variable" />
+      </label>
+      <label>
+        <span>Zarr version</span>
+        <select id="zver">
+          <option value="2">2</option>
+          <option value="3">3</option>
+        </select>
+      </label>
+    </div>
+    <div class="row">
+      <label>
+        <span>lat dim</span>
+        <input id="latdim" />
+      </label>
+      <label>
+        <span>lon dim</span>
+        <input id="londim" />
+      </label>
+    </div>
+    <label>
+      <span>Selector (JSON)</span>
+      <input id="selector" />
+    </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Display</legend>
+    <div class="row">
+      <label>
+        <span>Range min</span>
+        <input id="cmin" type="number" step="any" />
+      </label>
+      <label>
+        <span>Range max</span>
+        <input id="cmax" type="number" step="any" />
+      </label>
+    </div>
+    <label>
+      <span>Colormap</span>
+      <select id="cmap">
+        <option value="fire">fire</option>
+        <option value="blues">blues</option>
+        <option value="warmcool">warm–cool (diverging)</option>
+        <option value="rainbow">rainbow (legacy ERBE look)</option>
+      </select>
+      <div class="swatch" id="swatch"></div>
+    </label>
+    <label>
+      <span>Projection</span>
+      <select id="proj">
+        <option value="mercator">mercator</option>
+        <option value="globe">globe (renders to poles)</option>
+      </select>
+    </label>
+  </fieldset>
+
+  <button id="load">Draw map</button>
+
+  <fieldset style="margin-top:18px">
+    <legend>Status</legend>
+    <div id="status"></div>
+  </fieldset>
+</div>
+
+<div id="map"></div>
+
+<script type="module">
+import maplibregl from 'https://esm.sh/maplibre-gl@5.1.0'
+import { ZarrLayer } from 'https://esm.sh/@carbonplan/zarr-layer@0.7.0'
+
+const $ = (id) => document.getElementById(id)
+const statusEl = $('status')
+
+function log(msg, cls = 'note') {
+  const t = new Date().toLocaleTimeString([], { hour12: false })
+  statusEl.insertAdjacentHTML('afterbegin',
+    `<div class="${cls}">${t}  ${msg}</div>`)
+}
+
+// Network and promise failures are where CORS shows up. Surface them here
+// instead of only in the console, since that is the whole point of this page.
+window.addEventListener('unhandledrejection', (e) => {
+  log(`unhandled: ${e.reason?.message ?? e.reason}`, 'bad')
+  hint(String(e.reason?.message ?? e.reason))
+})
+window.addEventListener('error', (e) => {
+  log(`error: ${e.message}`, 'bad')
+  hint(e.message)
+})
+
+function hint(text) {
+  const t = text.toLowerCase()
+  if (t.includes('cors') || t.includes('access-control') || t.includes('failed to fetch')) {
+    log('→ Likely CORS. The bucket must send access-control-allow-origin and allow the Range header. Ask whoever administers the pod.', 'wait')
+  } else if (t.includes('403') || t.includes('forbidden')) {
+    log('→ Bucket is not publicly readable.', 'wait')
+  } else if (t.includes('404') || t.includes('not found')) {
+    log('→ Path or variable name is wrong. Check ds.data_vars in Python.', 'wait')
+  }
+}
+
+const COLORMAPS = {
+  fire: ['#000004','#1b0c41','#4a0c6b','#781c6d','#a52c60','#cf4446','#ed6925','#fb9b06','#f7d13d','#fcffa4'],
+  blues: ['#f7fbff','#deebf7','#c6dbef','#9ecae1','#6baed6','#4292c6','#2171b5','#08519c','#08306b'],
+  warmcool: ['#313695','#4575b4','#74add1','#abd9e9','#e0f3f8','#ffffbf','#fee090','#fdae61','#f46d43','#d73027','#a50026'],
+  rainbow: ['#0000ff','#00b7ff','#00ffb7','#4cff00','#d1ff00','#ffb700','#ff5500','#ff0000','#ff00ff'],
+}
+
+const PRESETS = {
+  climate: {
+    source: 'https://carbonplan-maps.s3.us-west-2.amazonaws.com/v2/demo/4d/tavg-prec-month',
+    variable: 'climate',
+    zver: '2',
+    latdim: 'y',
+    londim: 'x',
+    selector: '{"band":"tavg","month":1}',
+    cmin: -20, cmax: 30, cmap: 'warmcool',
+  },
+  ceres: {
+    // Replace with the plain-Zarr URL once you have one.
+    source: 'https://nyu1.osn.mghpcc.org/leap-pangeo-pipeline/CERES_EBAF/REPLACE_ME.zarr',
+    variable: 'toa_sw_all_mon',
+    zver: '3',
+    latdim: 'lat',
+    londim: 'lon',
+    selector: '{"month":1}',
+    cmin: 0, cmax: 350, cmap: 'fire',
+  },
+}
+
+function applyPreset(key) {
+  const p = PRESETS[key]
+  for (const [k, v] of Object.entries(p)) $(k).value = v
+  drawSwatch()
+}
+
+function drawSwatch() {
+  $('swatch').innerHTML = COLORMAPS[$('cmap').value]
+    .map((c) => `<i style="background:${c}"></i>`).join('')
+}
+
+let map, layer
+
+function initMap() {
+  map = new maplibregl.Map({
+    container: 'map',
+    style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+    center: [0, 15],
+    zoom: 1.2,
+  })
+  map.addControl(new maplibregl.NavigationControl(), 'top-right')
+  map.on('error', (e) => {
+    // Basemap tile noise is not what we are debugging; keep it quiet.
+    if (e?.error?.message) log(`map: ${e.error.message}`, 'note')
+  })
+  return new Promise((res) => map.on('load', res))
+}
+
+function setProjection() {
+  const want = $('proj').value
+  try {
+    map.setProjection({ type: want })
+    log(`projection: ${want}`, 'note')
+  } catch (err) {
+    log(`projection ${want} unavailable in this MapLibre build`, 'wait')
+  }
+}
+
+async function draw() {
+  statusEl.innerHTML = ''
+  log('starting', 'note')
+
+  let selector
+  try {
+    selector = JSON.parse($('selector').value || '{}')
+  } catch {
+    log('Selector is not valid JSON. Example: {"month":1}', 'bad')
+    return
+  }
+
+  if ($('source').value.includes('REPLACE_ME')) {
+    log('Source URL is still the placeholder. Paste a real store URL first.', 'bad')
+    return
+  }
+
+  if (layer) {
+    try { map.removeLayer('zarr-test') } catch {}
+    layer = null
+  }
+
+  const opts = {
+    id: 'zarr-test',
+    source: $('source').value.trim(),
+    variable: $('variable').value.trim(),
+    colormap: COLORMAPS[$('cmap').value],
+    clim: [Number($('cmin').value), Number($('cmax').value)],
+    selector,
+    zarrVersion: Number($('zver').value),
+    opacity: 0.85,
+    onLoadingStateChange: (loading) =>
+      log(loading ? 'fetching chunks…' : 'chunks loaded', loading ? 'wait' : 'ok'),
+  }
+
+  const lat = $('latdim').value.trim()
+  const lon = $('londim').value.trim()
+  if (lat && lon) opts.spatialDimensions = { lat, lon }
+
+  log(`variable "${opts.variable}", clim [${opts.clim}]`, 'note')
+
+  try {
+    layer = new ZarrLayer(opts)
+    map.addLayer(layer)
+    log('layer added — if the map is still empty, watch for errors above', 'ok')
+  } catch (err) {
+    log(`failed: ${err.message}`, 'bad')
+    hint(err.message)
+  }
+}
+
+$('preset').addEventListener('change', (e) => applyPreset(e.target.value))
+$('cmap').addEventListener('change', () => {
+  drawSwatch()
+  if (layer) layer.setColormap(COLORMAPS[$('cmap').value])
+})
+$('proj').addEventListener('change', setProjection)
+$('load').addEventListener('click', draw)
+
+// Live range editing without a redraw, which is Robert's minimum tier.
+for (const id of ['cmin', 'cmax']) {
+  $(id).addEventListener('change', () => {
+    if (layer) layer.setClim([Number($('cmin').value), Number($('cmax').value)])
+  })
+}
+
+applyPreset('climate')
+await initMap()
+log('map ready — press Draw map', 'ok')
+</script>
+</body>
+</html>
