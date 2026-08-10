@@ -13,17 +13,17 @@
       "albedo": {
         "shape": [
           12,
-          180,
-          360
+          359,
+          719
         ],
-        "data_type": "float32",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              180,
-              360
+              359,
+              719
             ]
           }
         },
@@ -66,17 +66,17 @@
       "albedo_clear": {
         "shape": [
           12,
-          180,
-          360
+          359,
+          719
         ],
-        "data_type": "float32",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              180,
-              360
+              359,
+              719
             ]
           }
         },
@@ -119,17 +119,17 @@
       "cloud_forcing_net": {
         "shape": [
           12,
-          180,
-          360
+          359,
+          719
         ],
-        "data_type": "float32",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              180,
-              360
+              359,
+              719
             ]
           }
         },
@@ -171,17 +171,17 @@
       "greenhouse_lw": {
         "shape": [
           12,
-          180,
-          360
+          359,
+          719
         ],
-        "data_type": "float32",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              180,
-              360
+              359,
+              719
             ]
           }
         },
@@ -224,17 +224,17 @@
       "incoming_sw": {
         "shape": [
           12,
-          180,
-          360
+          359,
+          719
         ],
-        "data_type": "float32",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              180,
-              360
+              359,
+              719
             ]
           }
         },
@@ -275,14 +275,14 @@
       },
       "lat": {
         "shape": [
-          180
+          359
         ],
-        "data_type": "float32",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              180
+              359
             ]
           }
         },
@@ -320,14 +320,14 @@
       },
       "lon": {
         "shape": [
-          360
+          719
         ],
-        "data_type": "float32",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              360
+              719
             ]
           }
         },
@@ -414,17 +414,17 @@
       "outgoing_lw": {
         "shape": [
           12,
-          180,
-          360
+          359,
+          719
         ],
-        "data_type": "float32",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              180,
-              360
+              359,
+              719
             ]
           }
         },
@@ -466,17 +466,17 @@
       "outgoing_lw_clear": {
         "shape": [
           12,
-          180,
-          360
+          359,
+          719
         ],
-        "data_type": "float32",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              180,
-              360
+              359,
+              719
             ]
           }
         },
@@ -518,17 +518,17 @@
       "reflected_sw": {
         "shape": [
           12,
-          180,
-          360
+          359,
+          719
         ],
-        "data_type": "float32",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              180,
-              360
+              359,
+              719
             ]
           }
         },
@@ -570,17 +570,17 @@
       "reflected_sw_clear": {
         "shape": [
           12,
-          180,
-          360
+          359,
+          719
         ],
-        "data_type": "float32",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              180,
-              360
+              359,
+              719
             ]
           }
         },
@@ -622,17 +622,17 @@
       "surface_lw_up": {
         "shape": [
           12,
-          180,
-          360
+          359,
+          719
         ],
-        "data_type": "float32",
+        "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              180,
-              360
+              359,
+              719
             ]
           }
         },
