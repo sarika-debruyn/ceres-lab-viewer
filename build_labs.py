@@ -116,6 +116,27 @@ def main():
         print("rolling longitude to -180/180")
         ds = ds.assign_coords(lon=(((ds.lon + 180) % 360) - 180)).sortby("lon")
 
+    # Optional smoothing for display. CERES measures at 1°; interpolating to a
+    # finer grid adds no information, it just renders the same field without
+    # blocky cell edges. The ERBE figures the old labs used were smoothed the
+    # same way. Set UPSAMPLE = None to keep the native grid.
+    #
+    #   None   ~5 MB total, visible 1° blocks
+    #   0.5    ~30 MB, noticeably smoother   <- good default
+    #   0.25   ~120 MB, smooth; trim variables first
+    UPSAMPLE = 0.5
+
+    if UPSAMPLE:
+        fine_lat = np.arange(float(ds.lat.min()), float(ds.lat.max()) + UPSAMPLE / 2, UPSAMPLE)
+        fine_lon = np.arange(float(ds.lon.min()), float(ds.lon.max()) + UPSAMPLE / 2, UPSAMPLE)
+        print(f"interpolating to {UPSAMPLE}° "
+              f"({len(fine_lat)}x{len(fine_lon)} from {ds.lat.size}x{ds.lon.size})")
+        ds = ds.interp(lat=fine_lat, lon=fine_lon, method="linear")
+        ds.attrs["display_grid"] = (
+            f"interpolated to {UPSAMPLE} deg for display; "
+            "native CERES resolution is 1 deg"
+        )
+
     # One map per chunk, so a single view is a single request.
     ds = ds.chunk({"lat": -1, "lon": -1, DIM: 1})
 
