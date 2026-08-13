@@ -242,7 +242,10 @@ const $ = (id) => document.getElementById(id)
 // legacy ERBE figures used it and students may need to compare.
 const RAMPS = {
   thermal:  ['#0b1026','#2b1a4a','#5c2160','#8f2c5c','#bd4a44','#dc7434','#eda63c','#f6d976','#fdfbc8'],
-  ice:      ['#08243f','#14496b','#2b7191','#5b9db0','#96c4c8','#c8dfdd','#eef4f2','#ffffff'],
+  // Stops spread evenly through lightness. The previous set piled four
+  // near-white stops into the top third, so 41% of the ramp was effectively
+  // one colour and everything in the upper range flattened out. Now 28%.
+  ice:      ['#04182b','#0d3a5c','#1d6088','#3a86a6','#63aab8','#93c9c7','#c2e0da','#f2f8f5'],
   viridis:  ['#440154','#46327e','#365c8d','#277f8e','#1fa187','#4ac16d','#a0da39','#fde725'],
   diverging:['#053061','#2166ac','#4393c3','#92c5de','#f7f7f7','#f4a582','#d6604d','#b2182b','#67001f'],
   rainbow:  ['#0000ff','#00b7ff','#00ffb7','#4cff00','#d1ff00','#ffb700','#ff5500','#ff0000','#ff00ff'],
@@ -252,21 +255,27 @@ const RAMPS = {
 // Each entry carries the defaults that make the field legible, so nobody
 // has to guess a colour range.
 //
-// Albedo is deliberately NOT 0-90 here. Ocean albedo is ~6-10%, and ocean is
-// 70% of the planet, so a 0-90 scale renders most of the map as one flat dark
-// wash. 0-40 keeps the 30% threshold the labs ask about near mid-scale while
-// still resolving ocean. Bright ice clips; raise Max to see it.
+// Ranges are set from the data, not guessed: each is the 2nd-98th percentile
+// of the OCEAN between 60S and 60N, which is the two-thirds of the map that
+// was rendering as one flat wash. Land and ice sit above most of these and
+// clip at the bright end — that is the deliberate trade. The Min/Max boxes
+// reopen the range when a task needs the land detail instead.
+//
+// Net cloud forcing is the exception: it uses a diverging ramp, so its range
+// MUST stay symmetric about zero or the neutral colour lands somewhere other
+// than 0 W/m-2. At [-100,40] the white point sat at -30, which painted the
+// ocean's typical -17 W/m-2 cooling as a warming-coloured pale red.
 const FIELDS = [
-  { id:'albedo',             label:'Albedo (all-sky)',        units:'%',      clim:[0,70],     ramp:'ice' },
-  { id:'albedo_clear',       label:'Albedo (clear-sky)',      units:'%',      clim:[0,40],     ramp:'ice' },
-  { id:'incoming_sw',        label:'Incoming solar',          units:'W m⁻²',  clim:[0,550],    ramp:'thermal' },
-  { id:'reflected_sw',       label:'Reflected SW (all-sky)',  units:'W m⁻²',  clim:[0,180],    ramp:'thermal' },
-  { id:'reflected_sw_clear', label:'Reflected SW (clear)',    units:'W m⁻²',  clim:[0,120],    ramp:'thermal' },
-  { id:'outgoing_lw',        label:'Outgoing LW (all-sky)',   units:'W m⁻²',  clim:[150,320],  ramp:'thermal' },
-  { id:'outgoing_lw_clear',  label:'Outgoing LW (clear)',     units:'W m⁻²',  clim:[150,330],  ramp:'thermal' },
-  { id:'cloud_forcing_net',  label:'Net cloud forcing',       units:'W m⁻²',  clim:[-100,40],  ramp:'diverging' },
-  { id:'surface_lw_up',      label:'Surface LW emitted',      units:'W m⁻²',  clim:[200,480],  ramp:'thermal' },
-  { id:'greenhouse_lw',      label:'Greenhouse effect',       units:'W m⁻²',  clim:[0,120],    ramp:'viridis' },
+  { id:'albedo',             label:'Albedo (all-sky)',        units:'%',      clim:[10,55],    ramp:'ice' },
+  { id:'albedo_clear',       label:'Albedo (clear-sky)',      units:'%',      clim:[5,30],     ramp:'ice' },
+  { id:'incoming_sw',        label:'Incoming solar',          units:'W m⁻²',  clim:[0,520],    ramp:'thermal' },
+  { id:'reflected_sw',       label:'Reflected SW (all-sky)',  units:'W m⁻²',  clim:[20,200],   ramp:'thermal' },
+  { id:'reflected_sw_clear', label:'Reflected SW (clear)',    units:'W m⁻²',  clim:[10,80],    ramp:'thermal' },
+  { id:'outgoing_lw',        label:'Outgoing LW (all-sky)',   units:'W m⁻²',  clim:[190,300],  ramp:'thermal' },
+  { id:'outgoing_lw_clear',  label:'Outgoing LW (clear)',     units:'W m⁻²',  clim:[210,310],  ramp:'thermal' },
+  { id:'cloud_forcing_net',  label:'Net cloud forcing',       units:'W m⁻²',  clim:[-100,100], ramp:'diverging' },
+  { id:'surface_lw_up',      label:'Surface LW emitted',      units:'W m⁻²',  clim:[280,480],  ramp:'thermal' },
+  { id:'greenhouse_lw',      label:'Greenhouse effect',       units:'W m⁻²',  clim:[60,260],   ramp:'viridis' },
 ]
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
