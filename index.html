@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CERES EBAF — radiation budget viewer</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.1.0/dist/maplibre-gl.css" />
+<style>
+  /* The data owns every hue on this page. The interface is achromatic on
+     purpose: any accent colour would compete with the colormap and make
+     students misread the map. */
+  :root {
+    --bg:    #101215;
+    --panel: #171a1e;
+    --line:  #2b3036;
+    --ink:   #e6e7e9;
+    --mid:   #9aa0a6;
+    --dim:   #6c7278;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); }
+  body {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    font: 13px/1.5 ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; grid-template-rows: auto 65vh; }
+  }
+
+  aside {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    padding: 18px 18px 40px;
+  }
+  .brand {
+    font: 600 14px/1.25 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.01em;
+    margin: 0 0 2px;
+  }
+  .brand em {
+    display: block;
+    font: 400 11px/1.4 ui-monospace, monospace;
+    font-style: normal;
+    color: var(--dim);
+    letter-spacing: 0.02em;
+    margin-top: 3px;
+  }
+
+  .group { margin-top: 22px; }
+  .group > h2 {
+    font: 600 10px/1 ui-monospace, monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 0 0 9px;
+  }
+
+  label.field { display: block; margin-bottom: 11px; }
+  label.field > span {
+    display: block;
+    font-size: 11px;
+    color: var(--mid);
+    margin-bottom: 4px;
+  }
+  select, input[type="text"], input[type="number"] {
+    width: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 7px 8px;
+    font: 12px/1.4 ui-monospace, monospace;
+  }
+  select:focus, input:focus {
+    outline: 2px solid #5b6b7a;
+    outline-offset: 1px;
+  }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  input[type="range"] { width: 100%; accent-color: var(--mid); }
+
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .seg button {
+    flex: 1;
+    background: var(--bg);
+    color: var(--mid);
+    border: 0;
+    padding: 7px 4px;
+    font: 11px/1 ui-monospace, monospace;
+    cursor: pointer;
+  }
+  .seg button[aria-pressed="true"] { background: #262c33; color: var(--ink); }
+  .seg button + button { border-left: 1px solid var(--line); }
+
+  /* The signature element: a real scientific colorbar with ticks and units,
+     not a decorative gradient strip. */
+  .cbar { margin-top: 4px; }
+  .cbar .ramp {
+    height: 14px;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+  }
+  .cbar .ticks {
+    display: flex;
+    justify-content: space-between;
+    font: 10px/1 ui-monospace, monospace;
+    color: var(--mid);
+    margin-top: 4px;
+  }
+  .cbar .units {
+    text-align: center;
+    font: 10px/1 ui-monospace, monospace;
+    color: var(--dim);
+    margin-top: 5px;
+    letter-spacing: 0.04em;
+  }
+
+  #readout {
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 10px 11px;
+    background: var(--bg);
+    font: 11px/1.6 ui-monospace, monospace;
+  }
+  #readout .big {
+    font-size: 19px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  #readout .meta { color: var(--dim); }
+
+  #note {
+    margin-top: 14px;
+    font: 11px/1.5 ui-monospace, monospace;
+    color: var(--dim);
+    white-space: pre-wrap;
+  }
+
+  #map { width: 100%; height: 100%; }
+  .maplibregl-ctrl-attrib { font-size: 10px; }
+</style>
+</head>
+<body>
+
+<aside>
+  <h1 class="brand">Earth's radiation budget
+    <em>CERES EBAF · 1° monthly climatology</em>
+  </h1>
+
+  <div class="group">
+    <h2>Field</h2>
+    <label class="field">
+      <span>Quantity</span>
+      <select id="variable"></select>
+    </label>
+    <label class="field">
+      <span>Month</span>
+      <select id="month"></select>
+    </label>
+  </div>
+
+  <div class="group">
+    <h2>Scale</h2>
+    <div class="pair">
+      <label class="field"><span>Min</span><input id="cmin" type="number" step="any" /></label>
+      <label class="field"><span>Max</span><input id="cmax" type="number" step="any" /></label>
+    </div>
+    <label class="field">
+      <span>Colours</span>
+      <select id="cmap"></select>
+    </label>
+    <div class="cbar">
+      <div class="ramp" id="ramp"></div>
+      <div class="ticks" id="ticks"></div>
+      <div class="units" id="units"></div>
+    </div>
+    <label class="field" style="margin-top:14px">
+      <span>Opacity <output id="opval">90%</output></span>
+      <input id="opacity" type="range" min="20" max="100" value="90" />
+    </label>
+  </div>
+
+  <div class="group">
+    <h2>Value at cursor</h2>
+    <div id="readout">
+      <div class="big" id="rval">—</div>
+      <div class="meta" id="rpos">move over the map</div>
+    </div>
+  </div>
+
+  <div class="group">
+    <h2>View</h2>
+    <label class="field">
+      <span>Basemap</span>
+      <div class="seg" id="basemap">
+        <button data-v="light" aria-pressed="true">light</button>
+        <button data-v="dark" aria-pressed="false">dark</button>
+      </div>
+    </label>
+    <label class="field">
+      <span>Projection</span>
+      <div class="seg" id="proj">
+        <button data-v="mercator" aria-pressed="true">flat</button>
+        <button data-v="globe" aria-pressed="false">globe</button>
+      </div>
+    </label>
+    <label class="field">
+      <span>Grid lines</span>
+      <div class="seg" id="grat">
+        <button data-v="on" aria-pressed="true">on</button>
+        <button data-v="off" aria-pressed="false">off</button>
+      </div>
+    </label>
+  </div>
+
+  <div id="note"></div>
+</aside>
+
+<div id="map"></div>
+
+<script type="module">
+import maplibregl from 'https://esm.sh/maplibre-gl@5.1.0'
+import { ZarrLayer } from 'https://esm.sh/@carbonplan/zarr-layer@0.7.0'
+
+// Resolved against wherever this page is served from, so the same file works
+// on localhost and on GitHub Pages with no edit.
+const SOURCE = new URL('./ceres.zarr', window.location.href).href
+const ZARR_VERSION = 3
+
+// 1 degree is about 110 km. Past zoom 5 you are looking at rendering
+// artefacts, not measurements, so the map refuses to go further.
+const MAX_ZOOM = 5
+
+const $ = (id) => document.getElementById(id)
+
+// ---- colour ramps -----------------------------------------------------
+// Sequential ramps for one-directional quantities, one diverging ramp for
+// signed ones (cloud forcing changes sign), and rainbow only because the
+// legacy ERBE figures used it and students may need to compare.
+const RAMPS = {
+  thermal:  ['#0b1026','#2b1a4a','#5c2160','#8f2c5c','#bd4a44','#dc7434','#eda63c','#f6d976','#fdfbc8'],
+  ice:      ['#08243f','#14496b','#2b7191','#5b9db0','#96c4c8','#c8dfdd','#eef4f2','#ffffff'],
+  viridis:  ['#440154','#46327e','#365c8d','#277f8e','#1fa187','#4ac16d','#a0da39','#fde725'],
+  diverging:['#053061','#2166ac','#4393c3','#92c5de','#f7f7f7','#f4a582','#d6604d','#b2182b','#67001f'],
+  rainbow:  ['#0000ff','#00b7ff','#00ffb7','#4cff00','#d1ff00','#ffb700','#ff5500','#ff0000','#ff00ff'],
+}
+
+// ---- what students can look at ---------------------------------------
+// Each entry carries the defaults that make the field legible, so nobody
+// has to guess a colour range.
+//
+// Albedo is deliberately NOT 0-90 here. Ocean albedo is ~6-10%, and ocean is
+// 70% of the planet, so a 0-90 scale renders most of the map as one flat dark
+// wash. 0-40 keeps the 30% threshold the labs ask about near mid-scale while
+// still resolving ocean. Bright ice clips; raise Max to see it.
+const FIELDS = [
+  { id:'albedo',             label:'Albedo (all-sky)',        units:'%',      clim:[0,70],     ramp:'ice' },
+  { id:'albedo_clear',       label:'Albedo (clear-sky)',      units:'%',      clim:[0,40],     ramp:'ice' },
+  { id:'incoming_sw',        label:'Incoming solar',          units:'W m⁻²',  clim:[0,550],    ramp:'thermal' },
+  { id:'reflected_sw',       label:'Reflected SW (all-sky)',  units:'W m⁻²',  clim:[0,180],    ramp:'thermal' },
+  { id:'reflected_sw_clear', label:'Reflected SW (clear)',    units:'W m⁻²',  clim:[0,120],    ramp:'thermal' },
+  { id:'outgoing_lw',        label:'Outgoing LW (all-sky)',   units:'W m⁻²',  clim:[150,320],  ramp:'thermal' },
+  { id:'outgoing_lw_clear',  label:'Outgoing LW (clear)',     units:'W m⁻²',  clim:[150,330],  ramp:'thermal' },
+  { id:'cloud_forcing_net',  label:'Net cloud forcing',       units:'W m⁻²',  clim:[-100,40],  ramp:'diverging' },
+  { id:'surface_lw_up',      label:'Surface LW emitted',      units:'W m⁻²',  clim:[200,480],  ramp:'thermal' },
+  { id:'greenhouse_lw',      label:'Greenhouse effect',       units:'W m⁻²',  clim:[0,120],    ramp:'viridis' },
+]
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+const STYLES = {
+  light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+  dark:  'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+}
+
+let map, layer
+let state = {
+  field: FIELDS[0],
+  month: 1,
+  ramp: FIELDS[0].ramp,
+  clim: [...FIELDS[0].clim],
+  opacity: 0.9,
+  basemap: 'light',
+  projection: 'mercator',
+  graticule: true,
+}
+
+function note(msg) { $('note').textContent = msg }
+
+// ---- populate controls ------------------------------------------------
+$('variable').innerHTML = FIELDS
+  .map((f) => `<option value="${f.id}">${f.label}</option>`).join('')
+$('month').innerHTML = MONTHS
+  .map((m, i) => `<option value="${i + 1}">${m}</option>`).join('')
+$('cmap').innerHTML = Object.keys(RAMPS)
+  .map((k) => `<option value="${k}">${k}</option>`).join('')
+
+function syncScaleUI() {
+  $('cmin').value = state.clim[0]
+  $('cmax').value = state.clim[1]
+  $('cmap').value = state.ramp
+  const cols = RAMPS[state.ramp]
+  $('ramp').style.background = `linear-gradient(90deg, ${cols.join(',')})`
+  const [lo, hi] = state.clim
+  const mid = (lo + hi) / 2
+  const fmt = (v) => (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(v % 1 ? 1 : 0))
+  $('ticks').innerHTML = [lo, mid, hi].map((v) => `<span>${fmt(v)}</span>`).join('')
+  $('units').textContent = state.field.units
+}
+
+// ---- graticule --------------------------------------------------------
+// Both labs ask students about specific latitudes (40°N, 30°, 60°), so
+// they need to be able to find them.
+function graticule(step = 30) {
+  const lines = []
+  for (let lat = -60; lat <= 60; lat += step) {
+    lines.push(Array.from({ length: 73 }, (_, i) => [-180 + i * 5, lat]))
+  }
+  for (let lon = -180; lon <= 180; lon += step) {
+    lines.push(Array.from({ length: 37 }, (_, i) => [lon, -90 + i * 5]))
+  }
+  // The equator gets its own emphasis elsewhere; keep it in the set too.
+  return { type: 'Feature', geometry: { type: 'MultiLineString', coordinates: lines } }
+}
+
+// ---- map --------------------------------------------------------------
+function liftOutlines() {
+  // Only lift SYMBOL layers (place labels). Do not lift line layers: in
+  // Positron the coastline and water strokes are wide, near-opaque lines, and
+  // raising them above the data paints over the entire ocean. Line layers stay
+  // beneath the data and show through via the opacity slider.
+  for (const l of map.getStyle().layers || []) {
+    if (l.id === 'ceres' || l.id === 'grat-line') continue
+    if (l.type === 'symbol') {
+      try { map.moveLayer(l.id) } catch { /* layer went away on restyle */ }
+    }
+  }
+}
+
+function addGraticule() {
+  if (map.getSource('grat')) return
+  map.addSource('grat', { type: 'geojson', data: graticule() })
+  map.addLayer({
+    id: 'grat-line',
+    type: 'line',
+    source: 'grat',
+    paint: {
+      'line-color': state.basemap === 'light' ? '#000' : '#fff',
+      'line-opacity': 0.18,
+      'line-width': 0.6,
+    },
+  })
+  map.setLayoutProperty('grat-line', 'visibility', state.graticule ? 'visible' : 'none')
+}
+
+function addData() {
+  layer = new ZarrLayer({
+    id: 'ceres',
+    source: SOURCE,
+    variable: state.field.id,
+    colormap: RAMPS[state.ramp],
+    clim: state.clim,
+    selector: { month: state.month },
+    spatialDimensions: { lat: 'lat', lon: 'lon' },
+    zarrVersion: ZARR_VERSION,
+    opacity: state.opacity,
+    onLoadingStateChange: (busy) => note(busy ? 'loading…' : ''),
+  })
+  map.addLayer(layer)
+  liftOutlines()
+}
+
+async function buildMap() {
+  if (map) map.remove()
+  map = new maplibregl.Map({
+    container: 'map',
+    style: STYLES[state.basemap],
+    center: [0, 10],
+    zoom: 1.1,
+    maxZoom: MAX_ZOOM,
+    attributionControl: { compact: true },
+  })
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-right')
+  map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left')
+
+  await new Promise((res) => map.on('load', res))
+
+  try { map.setProjection({ type: state.projection }) } catch { /* older build */ }
+
+  addGraticule()
+  try {
+    addData()
+  } catch (err) {
+    note(`could not add layer: ${err.message}`)
+  }
+  // The graticule is a line layer, so liftOutlines() inside addData() already
+  // raised it. If the data failed to load, raise it anyway.
+  if (map.getLayer('grat-line')) {
+    try { map.moveLayer('grat-line') } catch { /* ignore */ }
+  }
+
+  map.on('mousemove', probe)
+  map.on('mouseout', () => {
+    $('rval').textContent = '—'
+    $('rpos').textContent = 'move over the map'
+  })
+}
+
+// ---- hover readout ----------------------------------------------------
+// This is what turns "look at the colour" into "read the number", which is
+// what several lab tasks actually require.
+let probeBusy = false
+async function probe(e) {
+  if (!layer || probeBusy) return
+  probeBusy = true
+  const { lng, lat } = e.lngLat
+  try {
+    const res = await layer.queryData({
+      type: 'Point',
+      coordinates: [((lng + 180) % 360 + 360) % 360 - 180, lat],
+    })
+    const vals = res?.[state.field.id]
+    const v = Array.isArray(vals) ? vals[0] : vals
+    $('rval').textContent =
+      v == null || Number.isNaN(v)
+        ? 'no data'
+        : `${v.toFixed(1)} ${state.field.units}`
+    const ns = lat >= 0 ? 'N' : 'S'
+    const ew = lng >= 0 ? 'E' : 'W'
+    $('rpos').textContent =
+      `${Math.abs(lat).toFixed(1)}°${ns}  ${Math.abs(lng).toFixed(1)}°${ew}  ·  ${MONTHS[state.month - 1]}`
+  } catch {
+    /* off-grid or still loading; leave the last good value */
+  } finally {
+    probeBusy = false
+  }
+}
+
+// ---- wiring -----------------------------------------------------------
+$('variable').addEventListener('change', (e) => {
+  state.field = FIELDS.find((f) => f.id === e.target.value)
+  state.clim = [...state.field.clim]
+  state.ramp = state.field.ramp
+  syncScaleUI()
+  if (layer) {
+    layer.setClim(state.clim)
+    layer.setColormap(RAMPS[state.ramp])
+    layer.setVariable(state.field.id)
+  }
+})
+
+$('month').addEventListener('change', (e) => {
+  state.month = Number(e.target.value)
+  if (layer) layer.setSelector({ month: state.month })
+})
+
+for (const id of ['cmin', 'cmax']) {
+  $(id).addEventListener('change', () => {
+    state.clim = [Number($('cmin').value), Number($('cmax').value)]
+    syncScaleUI()
+    if (layer) layer.setClim(state.clim)
+  })
+}
+
+$('cmap').addEventListener('change', (e) => {
+  state.ramp = e.target.value
+  syncScaleUI()
+  if (layer) layer.setColormap(RAMPS[state.ramp])
+})
+
+$('opacity').addEventListener('input', (e) => {
+  state.opacity = Number(e.target.value) / 100
+  $('opval').textContent = `${e.target.value}%`
+  if (layer) layer.setOpacity(state.opacity)
+})
+
+function segment(id, apply) {
+  $(id).addEventListener('click', (e) => {
+    const btn = e.target.closest('button')
+    if (!btn) return
+    for (const b of $(id).querySelectorAll('button')) {
+      b.setAttribute('aria-pressed', String(b === btn))
+    }
+    apply(btn.dataset.v)
+  })
+}
+
+segment('basemap', (v) => { state.basemap = v; buildMap() })
+segment('proj', (v) => {
+  state.projection = v
+  try { map.setProjection({ type: v }) }
+  catch { note('this MapLibre build has no globe projection') }
+})
+segment('grat', (v) => {
+  state.graticule = v === 'on'
+  if (map.getLayer('grat-line')) {
+    map.setLayoutProperty('grat-line', 'visibility', state.graticule ? 'visible' : 'none')
+  }
+})
+
+syncScaleUI()
+await buildMap()
+</script>
+</body>
+</html>
