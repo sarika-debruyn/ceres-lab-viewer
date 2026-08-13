@@ -2,12 +2,7 @@
   "shape": [
     12
   ],
-  "data_type": {
-    "name": "fixed_length_utf32",
-    "configuration": {
-      "length_bytes": 36
-    }
-  },
+  "data_type": "int32",
   "chunk_grid": {
     "name": "regular",
     "configuration": {
@@ -22,7 +17,7 @@
       "separator": "/"
     }
   },
-  "fill_value": "",
+  "fill_value": 0,
   "codecs": [
     {
       "name": "bytes",
@@ -38,7 +33,9 @@
       }
     }
   ],
-  "attributes": {},
+  "attributes": {
+    "long_name": "month index, 1 = January"
+  },
   "dimension_names": [
     "month"
   ],

@@ -3,7 +3,22 @@
     "title": "CERES EBAF for EESC UN2100 labs",
     "source": "leap-pangeo-pipeline/CERES_EBAF/store.icechunk",
     "epoch": "monthly_clim",
-    "note": "Derived fields computed locally; verify before teaching use."
+    "note": "Derived fields computed locally; verify before teaching use.",
+    "display_grid": "interpolated to 0.5 deg for display; native CERES resolution is 1 deg",
+    "month_names": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ]
   },
   "zarr_format": 3,
   "consolidated_metadata": {
@@ -367,12 +382,7 @@
         "shape": [
           12
         ],
-        "data_type": {
-          "name": "fixed_length_utf32",
-          "configuration": {
-            "length_bytes": 36
-          }
-        },
+        "data_type": "int32",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
@@ -387,7 +397,7 @@
             "separator": "/"
           }
         },
-        "fill_value": "",
+        "fill_value": 0,
         "codecs": [
           {
             "name": "bytes",
@@ -403,7 +413,9 @@
             }
           }
         ],
-        "attributes": {},
+        "attributes": {
+          "long_name": "month index, 1 = January"
+        },
         "dimension_names": [
           "month"
         ],
