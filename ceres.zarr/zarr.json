@@ -4,7 +4,7 @@
     "source": "leap-pangeo-pipeline/CERES_EBAF/store.icechunk",
     "epoch": "monthly_clim",
     "note": "Derived fields computed locally; verify before teaching use.",
-    "display_grid": "interpolated to 0.5 deg for display; native CERES resolution is 1 deg",
+    "display_grid": "interpolated to 0.25 deg for display; native CERES resolution is 1 deg",
     "month_names": [
       "January",
       "February",
@@ -28,17 +28,17 @@
       "albedo": {
         "shape": [
           12,
-          359,
-          719
+          717,
+          1437
         ],
-        "data_type": "float64",
+        "data_type": "float32",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              359,
-              719
+              717,
+              1437
             ]
           }
         },
@@ -81,17 +81,17 @@
       "albedo_clear": {
         "shape": [
           12,
-          359,
-          719
+          717,
+          1437
         ],
-        "data_type": "float64",
+        "data_type": "float32",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              359,
-              719
+              717,
+              1437
             ]
           }
         },
@@ -134,17 +134,17 @@
       "cloud_forcing_net": {
         "shape": [
           12,
-          359,
-          719
+          717,
+          1437
         ],
-        "data_type": "float64",
+        "data_type": "float32",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              359,
-              719
+              717,
+              1437
             ]
           }
         },
@@ -186,17 +186,17 @@
       "greenhouse_lw": {
         "shape": [
           12,
-          359,
-          719
+          717,
+          1437
         ],
-        "data_type": "float64",
+        "data_type": "float32",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              359,
-              719
+              717,
+              1437
             ]
           }
         },
@@ -239,17 +239,17 @@
       "incoming_sw": {
         "shape": [
           12,
-          359,
-          719
+          717,
+          1437
         ],
-        "data_type": "float64",
+        "data_type": "float32",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              359,
-              719
+              717,
+              1437
             ]
           }
         },
@@ -290,14 +290,14 @@
       },
       "lat": {
         "shape": [
-          359
+          717
         ],
         "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              359
+              717
             ]
           }
         },
@@ -335,14 +335,14 @@
       },
       "lon": {
         "shape": [
-          719
+          1437
         ],
         "data_type": "float64",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
-              719
+              1437
             ]
           }
         },
@@ -426,17 +426,17 @@
       "outgoing_lw": {
         "shape": [
           12,
-          359,
-          719
+          717,
+          1437
         ],
-        "data_type": "float64",
+        "data_type": "float32",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              359,
-              719
+              717,
+              1437
             ]
           }
         },
@@ -478,17 +478,17 @@
       "outgoing_lw_clear": {
         "shape": [
           12,
-          359,
-          719
+          717,
+          1437
         ],
-        "data_type": "float64",
+        "data_type": "float32",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              359,
-              719
+              717,
+              1437
             ]
           }
         },
@@ -530,17 +530,17 @@
       "reflected_sw": {
         "shape": [
           12,
-          359,
-          719
+          717,
+          1437
         ],
-        "data_type": "float64",
+        "data_type": "float32",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              359,
-              719
+              717,
+              1437
             ]
           }
         },
@@ -582,17 +582,17 @@
       "reflected_sw_clear": {
         "shape": [
           12,
-          359,
-          719
+          717,
+          1437
         ],
-        "data_type": "float64",
+        "data_type": "float32",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              359,
-              719
+              717,
+              1437
             ]
           }
         },
@@ -634,17 +634,17 @@
       "surface_lw_up": {
         "shape": [
           12,
-          359,
-          719
+          717,
+          1437
         ],
-        "data_type": "float64",
+        "data_type": "float32",
         "chunk_grid": {
           "name": "regular",
           "configuration": {
             "chunk_shape": [
               1,
-              359,
-              719
+              717,
+              1437
             ]
           }
         },
